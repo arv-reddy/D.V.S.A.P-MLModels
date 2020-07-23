@@ -64,17 +64,14 @@ def get_sdd_stream(consumer):
             img = cv2.imdecode(jpg_as_np, flags=1)
             processedFrame = detect(img,net,ln,LABELS)
             ret,encodedFrame = cv2.imencode('.jpg',processedFrame)
-            # cv2.imshow('frame',img)
-            # predicted_jpg = get_jpg(prediction_obj)
-            # predicted_frame = predicted_jpg.tobytes()
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpg\r\n\r\n' + encodedFrame.tobytes() + b'\r\n\r\n')
         countFrames += 1
 
 # route to display stream of multiple cameras
-@app.route("/sdds/<int:camera_numbers>")
-def get_sdds(camera_numbers):
-    return render_template("videos.html", cam_nums = list(range(1,camera_numbers+1)))
+# @app.route("/sdds/<int:camera_numbers>")
+# def get_sdds(camera_numbers):
+#     return render_template("videos.html", cam_nums = list(range(1,camera_numbers+1)))
 
 @app.route("/pc/<int:cam_num>")
 def pc(cam_num):
@@ -97,42 +94,6 @@ def get_pc_stream(consumer):
     Here is where we recieve streamed images from the Kafka Server and convert 
     them to a Flask-readable format.
     """
-    # # initialize the list of class labels MobileNet SSD was trained to
-    # # detect
-    # CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
-    #     "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
-    #     "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
-    #     "sofa", "train", "tvmonitor"]
-
-    # prototxt = "people_counting/mobilenet_ssd/MobileNetSSD_deploy.prototxt"
-
-    # model = "people_counting/mobilenet_ssd/MobileNetSSD_deploy.caffemodel"
-
-    # # load our serialized model from disk
-    # print("[INFO] loading model...")
-    # net = cv2.dnn.readNetFromCaffe(prototxt, model)
-
-    # # initialize the frame dimensions (we'll set them as soon as we read
-    # # the first frame from the video)
-    # W = None
-    # H = None
-
-    # # instantiate our centroid tracker, then initialize a list to store
-    # # each of our dlib correlation trackers, followed by a dictionary to
-    # # map each unique object ID to a TrackableObject
-    # ct = CentroidTracker(maxDisappeared=40, maxDistance=50)
-    # trackers = []
-    # trackableObjects = {}
-
-    # # initialize the total number of frames processed thus far, along
-    # # with the total number of objects that have moved either up or down
-    # totalFrames = 0
-    # totalDown = 0
-    # totalUp = 0
-
-    # # start the frames per second throughput estimator
-    # fps = FPS().start()
-
     for msg in consumer:
         prediction_obj = msg.value
         string = prediction_obj['frame']
@@ -140,21 +101,17 @@ def get_pc_stream(consumer):
         jpg_as_np = np.frombuffer(jpg_original, dtype=np.uint8)
         img = cv2.imdecode(jpg_as_np, flags=1)
         processedFrame = count(img)
-        # totalFrames+=1
-        # fps.update()
         ret,encodedFrame = cv2.imencode('.jpg',processedFrame)
         yield (b'--frame\r\n'
                b'Content-Type: image/jpg\r\n\r\n' + encodedFrame.tobytes() + b'\r\n\r\n')
 
-    # fps.stop()
+# @app.route("/pcs/<int:camera_numbers>")
+# def get_pcs(camera_numbers):
+#     return render_template("videos.html", cam_nums = list(range(1,camera_numbers+1)))
 
-@app.route("/pcs/<int:camera_numbers>")
-def get_pcs(camera_numbers):
-    return render_template("videos.html", cam_nums = list(range(1,camera_numbers+1)))
-
-@app.route("/copies/<int:cam_num>/<int:copies_num>")
-def get_copies(cam_num,copies_num):
-    return render_template("copies.html", cam_num = cam_num, copies_num = list(range(1,copies_num+1)))
+# @app.route("/copies/<int:cam_num>/<int:copies_num>")
+# def get_copies(cam_num,copies_num):
+#     return render_template("copies.html", cam_num = cam_num, copies_num = list(range(1,copies_num+1)))
 
 if __name__ == "__main__":
     app.run(host = '0.0.0.0', port = 3000, debug = True)
