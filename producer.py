@@ -25,9 +25,6 @@ camera_urls = ["pedestrians.mp4","example_01.mp4"]
 # topic to write to
 topic="video"
 
-def np_to_json(obj):
-	return {"frame":base64.b64encode(obj.tostring()).decode("utf-8")}
-
 class StreamVideo(Process):
 	
 	def __init__(self,video_path,cam_num):
@@ -45,31 +42,19 @@ class StreamVideo(Process):
 		
 		# Producer Object
 		producer = KafkaProducer(bootstrap_servers = 'localhost:9092',
-														  value_serializer=lambda value: json.dumps(value).encode())
+					 value_serializer=lambda value: json.dumps(value).encode())
 
 		camera = cv2.VideoCapture(self.video_path)
 
-		totalFrames = 0
 		# Read frame-by-frame and publish
 		while True:
-			if totalFrames%100 == 0:
-				success,frame = camera.read()
-				# msg = self.transform(frame)
-				string = base64.b64encode(cv2.imencode('.jpg', frame)[1]).decode()
-				dict = {'frame': string}
-				producer.send(topic,partition=self.cam_num,value=dict)
-				time.sleep(0.2)
-			totalFrames += 1
+			success,frame = camera.read()
+			string = base64.b64encode(cv2.imencode('.jpg', frame)[1]).decode()
+			dict = {'frame': string}
+			producer.send(topic,partition=self.cam_num,value=dict)
+			time.sleep(0.2)
 
 		camera.release()
-
-	def transform(self,frame):
-		# frame = imutils.resize(frame, width=400)
-		frame_dict = np_to_json(frame.astype(np.uint8))
-		msg = {"camera": self.cam_num}
-		msg.update(frame_dict)
-		return msg
-		# return frame_dict
 
 # Init StreamVideo processes, these publish frames from respective camera to the same topic
 PRODUCERS = [StreamVideo(url,index) for index,url in enumerate(camera_urls)]
